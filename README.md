@@ -20,7 +20,7 @@ These lists are derived from **real-world DNS traffic** and are continuously upd
 ## Public DNS
 
 ```
-DNS-over-HTTPS (DoH): dns.skillmio.net
+DNS-over-HTTPS (DoH) & DNS-over-TLS (DoT): dns.skillmio.net
 dns1:
 dns2:
 ```

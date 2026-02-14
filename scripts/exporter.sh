@@ -1,6 +1,7 @@
 #!/bin/bash
 # pihole-export-clean.sh - Export Pi-hole blocked domains with exempt filtering
 # to download this script wget https://raw.githubusercontent.com/skillmio/dns/master/scripts/exporter.sh
+# chmod +x exporter.sh
 
 set -e  # Exit on error
 

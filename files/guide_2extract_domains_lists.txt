@@ -34,4 +34,6 @@ wget https://raw.githubusercontent.com/skillmio/dns/master/scripts/export-domain
 chmod +x export-domains.sh
 ./export-domains.sh
 
+# --- UPDATE DOMAIN-BLIST ---
+After copy and paste content to domain-blist
 

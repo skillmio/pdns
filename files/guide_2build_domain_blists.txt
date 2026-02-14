@@ -40,3 +40,6 @@ chmod +x export-domains.sh
 # --- UPDATE DOMAIN-BLIST ---
 After copy and paste content to domain-blist
 
+# --- CLEANUP YOUR PI-HOLE SERVER ---
+rm -f /tmp/*.txt
+

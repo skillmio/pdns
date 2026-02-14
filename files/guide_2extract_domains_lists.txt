@@ -30,8 +30,8 @@ pihole -g
 
 # --- DOWNLOAD AND EXECUTE SCRIPT ---
 cd /tmp/
-wget https://raw.githubusercontent.com/skillmio/dns/master/scripts/export-hosts.sh
-chmod +x export-hosts.sh
-./export-hosts.sh
+wget https://raw.githubusercontent.com/skillmio/dns/master/scripts/export-domains.sh
+chmod +x export-domains.sh
+./export-domains.sh
 
 

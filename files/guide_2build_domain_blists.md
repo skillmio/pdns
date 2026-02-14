@@ -39,6 +39,12 @@ dnf install -y sqlite3
 sudo sqlite3 /etc/pihole/gravity.db "INSERT INTO adlist (address, enabled, comment) VALUES ('https://raw.githubusercontent.com/skillmio/dns/master/files/hosts', 1, 'Skillmio’s Hosts');"
 ```
 
+
+### Add Source-Saraiva’s Inherited Hosts
+```Bash
+sudo sqlite3 /etc/pihole/gravity.db "INSERT INTO adlist (address, enabled, comment) VALUES ('https://raw.githubusercontent.com/skillmio/dns/master/files/primelist', 1, 'Source-Saraiva’s Hosts');"
+```
+
 ### Add Steven Black’s Hosts
 ```Bash
 sudo sqlite3 /etc/pihole/gravity.db "INSERT INTO adlist (address, enabled, comment) VALUES ('https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts', 1, 'Steven Black’s Hosts');"

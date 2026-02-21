@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" 
+"http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>PayloadContent</key>
+  <array>
+    <dict>
+      <key>DNSSettings</key>
+      <dict>
+        <key>DNSProtocol</key>
+        <string>TLS</string>
+        <key>ServerAddresses</key>
+        <array>
+          <string>102.213.34.98</string>
+          <string>196.61.76.76</string>
+        </array>
+        <key>ServerName</key>
+        <string>dns.skillmio.net</string>
+      </dict>
+      <key>PayloadDescription</key>
+      <string>Configura o DNS Skillmio (DoT)</string>
+      <key>PayloadDisplayName</key>
+      <string>Skillmio DNS</string>
+      <key>PayloadIdentifier</key>
+      <string>net.skillmio.dns</string>
+      <key>PayloadType</key>
+      <string>com.apple.dnsSettings.managed</string>
+      <key>PayloadUUID</key>
+      <string>12345678-1234-1234-1234-1234567890ab</string>
+      <key>PayloadVersion</key>
+      <integer>1</integer>
+    </dict>
+  </array>
+  <key>PayloadDisplayName</key>
+  <string>Skillmio DNS</string>
+  <key>PayloadIdentifier</key>
+  <string>net.skillmio.dnsprofile</string>
+  <key>PayloadType</key>
+  <string>Configuration</string>
+  <key>PayloadUUID</key>
+  <string>abcdefab-cdef-abcd-efab-cdefabcdefab</string>
+  <key>PayloadVersion</key>
+  <integer>1</integer>
+</dict>
+</plist>

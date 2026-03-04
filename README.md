@@ -70,6 +70,10 @@ A maintained list of **malicious or abusive IP addresses**, typically associated
 
 This list is intended for **network-level enforcement**.
 
+**Banned IP's Over Time Graph**
+
+![Banned IP's Graph](https://raw.githubusercontent.com/skillmio/CoSec/master/files/banned_ips_graph.png)
+
 ### How to use
 
 The `banned_ips` list can be applied to:

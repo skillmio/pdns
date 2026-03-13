@@ -35,8 +35,8 @@ GRAPH_TOTAL = os.path.join(EXPORT_DIR, "banned_ips_graph.png")
 GRAPH_GROWTH = os.path.join(EXPORT_DIR, "banned_ips_growth_graph.png")
 
 BRANCH = "main"
-BOT_USER = "bot-updater"
-BOT_EMAIL = "bot@skillmio.net"
+BOT_USER = "Skillmio"
+BOT_EMAIL = "skillmiocfs@gmail.com"
 COMMIT_MSG = "Update banned IP statistics"
 
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")

@@ -70,8 +70,8 @@ fi
 cp "$TMP_DIR/$FILE_TO_UPLOAD" "$REPO_DIR/"
 
 cd "$REPO_DIR"
-git config user.name "bot-updater"
-git config user.email "bot@skillmio.net"
+git config user.name "Skillmio"
+git config user.email "skillmiocfs@gmail.com"
 
 git add "$FILE_TO_UPLOAD"
 git commit -m "$BOT_COMMIT_MSG" || echo "No changes to commit."

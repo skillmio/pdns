@@ -1,4 +1,3 @@
-[![committers.top badge](https://user-badge.committers.top/angola/USERNAME.svg)](https://user-badge.committers.top/angola/USERNAME)
 # Collaborative Sec (CoSec)
 
 **Collaborative Sec (CoSec)** is a community-driven security initiative focused on sharing, curating, and maintaining high-quality threat-intelligence artifacts.

@@ -121,3 +121,4 @@ rm -f /tmp/exempt_domains.txt
 rm -f /tmp/exempt_norm.txt
 rm -f /tmp/external_blocked_domains.txt
 rm -f /tmp/external_norm.txt
+rm -f /tmp/blocked_domains.txt

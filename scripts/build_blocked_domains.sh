@@ -113,4 +113,4 @@ else
 fi
 
 # Cleanup
-sudo find /tmp -mindepth 1 -maxdepth 1 -type f -delete
+rm -f /tmp/blocked_domains.txt

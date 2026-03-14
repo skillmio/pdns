@@ -1,110 +1,117 @@
 #!/bin/bash
 # ---------------------------------------------------
-# Script: ban_ddos.sh
-# Purpose: Copy SQLite DB, extract all IPs querying dhl.com,
-#          feed them to Fail2Ban sshd jail, and sync banned IPs to GitHub in batches.
+# Script: ban_ddos.sh (High Performance Version)
+# Purpose: Detect abusive DNS queries and ban IPs
 # ---------------------------------------------------
 
-# ---------------------------
-# Paths
-# ---------------------------
+set -e
+
 DB_SOURCE="/etc/dns/apps/Query Logs (Sqlite)/querylogs.db"
 DB_COPY="/tmp/querylogs_copy.db"
-IP_FILE="/tmp/abuse_ips.txt"
-LOG_FILE="/tmp/ban_ddos.log"
 
-# GitHub repo for banned IPs
+TMP_IPS="/tmp/abuse_ips_raw.txt"
+TMP_NEW="/tmp/abuse_ips_new.txt"
+
 GIT_REPO="/tmp/CoSec"
-DDOS_FILE="$GIT_REPO/files/ddos.txt"
-BRANCH="main"
-BOT_USER="Skillmio"
-BOT_EMAIL="skillmiocfs@gmail.com"
 
-# ---------------------------
-# Timestamp
-# ---------------------------
+DATE=$(date +%F)
+DDOS_DIR="$GIT_REPO/files/ddos"
+DDOS_FILE="$DDOS_DIR/$DATE.txt"
+
+BRANCH="main"
+
 NOW=$(date '+%Y-%m-%d %H:%M:%S')
 echo "[$NOW] Starting ban_ddos.sh"
 
-# ---------------------------
-# 1️⃣ Copy DB safely
-# ---------------------------
+# ---------------------------------------------------
+# Copy DB
+# ---------------------------------------------------
+
 /bin/cp -f "$DB_SOURCE" "$DB_COPY"
 
-# ---------------------------
-# 2️⃣ Extract unique IPs querying dhl.com
-# ---------------------------
-sqlite3 "$DB_COPY" <<'EOF'
-.headers off
-.mode list
-.once /tmp/abuse_ips.txt
-SELECT DISTINCT client_ip
+# ---------------------------------------------------
+# Extract attacking IPs
+# ---------------------------------------------------
+
+sqlite3 "$DB_COPY" <<'EOF' > "$TMP_IPS"
+SELECT client_ip
 FROM dns_logs
 WHERE qname='dhl.com';
 EOF
 
-# ---------------------------
-# 3️⃣ Ensure Git repo exists
-# ---------------------------
+# Remove duplicates
+sort -u "$TMP_IPS" -o "$TMP_IPS"
+
+# ---------------------------------------------------
+# Ensure repo exists
+# ---------------------------------------------------
+
 if [ ! -d "$GIT_REPO" ]; then
-    echo "⚠️ GitHub repo not found at $GIT_REPO. Cloning..."
     git clone "https://$GITHUB_TOKEN@github.com/skillmio/CoSec.git" "$GIT_REPO"
 fi
 
+mkdir -p "$DDOS_DIR"
+
+cd "$GIT_REPO"
+
+git pull --rebase origin "$BRANCH"
+
 touch "$DDOS_FILE"
 
-cd "$GIT_REPO" || exit
-git config user.name "$BOT_USER"
-git config user.email "$BOT_EMAIL"
+# ---------------------------------------------------
+# Find NEW IPs only
+# ---------------------------------------------------
 
-# ---------------------------
-# 4️⃣ Pull latest changes to avoid push conflicts
-# ---------------------------
-git fetch origin "$BRANCH"
-git reset --hard "origin/$BRANCH"
+grep -vxFf "$DDOS_FILE" "$TMP_IPS" > "$TMP_NEW" || true
 
-# ---------------------------
-# 5️⃣ Ban IPs and update ddos.txt locally
-# ---------------------------
-count=0
-new_ips=0
+NEW_COUNT=$(wc -l < "$TMP_NEW")
+
+echo "New attacking IPs detected: $NEW_COUNT"
+
+# ---------------------------------------------------
+# Ban IPs
+# ---------------------------------------------------
+
+BAN_COUNT=0
+
 while read -r ip; do
-    if [ -n "$ip" ]; then
-        # Ban in Fail2Ban if not already banned
-        if ! fail2ban-client status sshd | grep -q "$ip"; then
-            count=$((count+1))
-            echo "[$(date '+%Y-%m-%d %H:%M:%S')] Banning IP: $ip"
-            fail2ban-client set sshd banip "$ip"
-        fi
+    [ -z "$ip" ] && continue
 
-        # Append to ddos.txt if not already present
-        if ! grep -q "^$ip\$" "$DDOS_FILE"; then
-            echo "$ip" >> "$DDOS_FILE"
-            echo "[$(date '+%Y-%m-%d %H:%M:%S')] Synced locally: Banned IP: $ip"
-            new_ips=$((new_ips+1))
-        fi
-    fi
-done < "$IP_FILE"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Banning IP: $ip"
 
-# ---------------------------
-# 6️⃣ Commit & push to GitHub (batch)
-# ---------------------------
-if [ $new_ips -gt 0 ]; then
+    fail2ban-client set sshd banip "$ip" || true
+
+    BAN_COUNT=$((BAN_COUNT+1))
+
+done < "$TMP_NEW"
+
+# ---------------------------------------------------
+# Update Git repo
+# ---------------------------------------------------
+
+if [ "$NEW_COUNT" -gt 0 ]; then
+
+    cat "$TMP_NEW" >> "$DDOS_FILE"
+
     git add "$DDOS_FILE"
-    commit_msg="Batch update banned IPs $(date '+%Y-%m-%d %H:%M:%S')"
-    commit_output=$(git commit -m "$commit_msg" 2>&1)
-    if [[ "$commit_output" == *"nothing to commit"* ]]; then
-        echo "No new IPs to commit"
-    else
-        git push origin "$BRANCH"
-        echo "✅ GitHub updated with $new_ips new IP(s)"
-    fi
+
+    git commit -m "DDOS batch $(date '+%Y-%m-%d %H:%M:%S')" || true
+
+    for i in 1 2 3; do
+        if git push origin "$BRANCH"; then
+            echo "✅ GitHub updated with $NEW_COUNT new IPs"
+            break
+        fi
+
+        echo "Push conflict — retrying..."
+        git pull --rebase origin "$BRANCH"
+    done
+
 else
-    echo "No new IPs to push to GitHub"
+    echo "No new IPs"
 fi
 
-# ---------------------------
-# Done
-# ---------------------------
-echo "[$(date '+%Y-%m-%d %H:%M:%S')] Completed. Total new IPs banned this run: $count"
-echo "-------------------------------------------------------"
+echo "Total banned this run: $BAN_COUNT"
+
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Finished"
+echo "------------------------------------------------"

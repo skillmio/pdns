@@ -7,7 +7,7 @@ TMP_DIR="/tmp"
 REPO_DIR="$TMP_DIR/CoSec"
 FILE_TO_UPLOAD="blocked_domains.txt"
 BRANCH="main"
-BOT_COMMIT_MSG="Updating blocked domains"
+BOT_COMMIT_MSG="Update blocked domains"
 
 EXTERNAL_URL="https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts"
 CANDIDATE_URL="https://raw.githubusercontent.com/skillmio/CoSec/master/files/candidate_domains"

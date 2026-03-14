@@ -80,5 +80,5 @@ git push origin "$BRANCH"
 echo ""
 echo "✅ All banned IPs merged and exported to GitHub!"
 echo "Cleaning"
-rm -rf /tmp/banned_ips.txt
+rm -f /tmp/banned_ips.txt
 cat /dev/null > /var/log/secure

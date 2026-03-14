@@ -8,7 +8,7 @@ TMP_DIR="/tmp"
 REPO_DIR="$TMP_DIR/CoSec"
 FILE_TO_UPLOAD="banned_ips.txt"
 BRANCH="main"
-BOT_COMMIT_MSG="Update banned IPs via bot-updater"
+BOT_COMMIT_MSG="Update banned IPs from production servers"
 LOGFILE="/var/log/secure"
 JAILS=("sshd")  # Only SSH
 

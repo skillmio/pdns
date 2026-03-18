@@ -35,9 +35,10 @@ fi
 # -------------------------------
 > "$TMP_RAW"  # truncate/create fresh
 
-timeout "$CAPTURE_TIME" tcpdump -nn -l udp port 53 and 'udp[10] & 0x80 = 0' 2>/dev/null \
+timeout "$CAPTURE_TIME" tcpdump -i eth0 -Z root -nn -l udp port 53 and 'udp[10] & 0x80 = 0' 2>/dev/null \
     | grep --line-buffered -E " ANY\?| TXT\?| DNSKEY\?| RRSIG\?" \
     >> "$TMP_RAW" || true
+
 
 LINE_COUNT=$(wc -l < "$TMP_RAW")
 echo "Raw matching lines captured: $LINE_COUNT"

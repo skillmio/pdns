@@ -6,13 +6,20 @@
 set -e
 
 # -------------------------------
+# Full paths — required for cron (minimal PATH environment)
+# -------------------------------
+TCPDUMP=/usr/sbin/tcpdump
+STDBUF=/usr/bin/stdbuf
+FAIL2BAN=/usr/bin/fail2ban-client
+GIT=/usr/bin/git
+
+# -------------------------------
 # Configurable Variables
 # -------------------------------
 IFACE="eth0"
 CAPTURE_TIME=120
 BAN_THRESHOLD=5
 JAIL="sshd"
-TMP_TCPDUMP="/tmp/dns_tcpdump_raw.log"
 TMP_RAW="/tmp/dns_raw.log"
 TMP_IPS="/tmp/dns_scored_ips.txt"
 TMP_NEW="/tmp/dns_new_ips.txt"
@@ -33,28 +40,34 @@ if [[ "$EUID" -ne 0 ]]; then
 fi
 
 # -------------------------------
-# Step 1: Capture raw tcpdump output to file
-# Writing directly to file avoids SIGPIPE breaking the grep pipe
-# -Z root prevents tcpdump from dropping privileges in cron
+# Verify required tools exist
 # -------------------------------
-> "$TMP_TCPDUMP"
+for bin in "$TCPDUMP" "$STDBUF" "$FAIL2BAN" "$GIT"; do
+    if [[ ! -x "$bin" ]]; then
+        echo "❌ ERROR: Required binary not found: $bin"
+        exit 1
+    fi
+done
+
+# -------------------------------
+# Capture + filter in one pipe
+# stdbuf -oL forces line-buffered output — prevents data loss on pipe close
+# Full paths used so cron can find all binaries
+# -------------------------------
 > "$TMP_RAW"
 
-timeout "$CAPTURE_TIME" tcpdump -i "$IFACE" -Z root -nn -l \
-    udp port 53 and 'udp[10] & 0x80 = 0' \
-    > "$TMP_TCPDUMP" 2>/dev/null || true
-
-# -------------------------------
-# Step 2: Filter abuse query types from captured file
-# -------------------------------
-grep -E " ANY\?| TXT\?| DNSKEY\?| RRSIG\?" "$TMP_TCPDUMP" >> "$TMP_RAW" || true
+$STDBUF -oL timeout "$CAPTURE_TIME" \
+    $TCPDUMP -i "$IFACE" -Z root -nn -l \
+    udp port 53 and 'udp[10] & 0x80 = 0' 2>/dev/null \
+    | $STDBUF -oL grep -E " ANY\?| TXT\?| DNSKEY\?| RRSIG\?" \
+    >> "$TMP_RAW" || true
 
 LINE_COUNT=$(wc -l < "$TMP_RAW")
 echo "Raw matching lines captured: $LINE_COUNT"
 
 if [[ "$LINE_COUNT" -eq 0 ]]; then
     echo "⚠️  No DNS abuse lines captured."
-    echo "   Test manually: tcpdump -i $IFACE -Z root -nn udp port 53 and 'udp[10] & 0x80 = 0'"
+    echo "   Test manually: $TCPDUMP -i $IFACE -Z root -nn udp port 53 and 'udp[10] & 0x80 = 0'"
     exit 0
 fi
 
@@ -64,8 +77,7 @@ echo "-----------------------------"
 
 # -------------------------------
 # Extract source IPs, count per IP, apply threshold
-# tcpdump format: HH:MM:SS.us IP src.port > dst.port: query
-# Field $3 = src.port e.g. 177.54.122.14.37015 — split on "." to get IP
+# Field $3 = src.port e.g. 177.54.122.14.37015
 # -------------------------------
 awk -v threshold="$BAN_THRESHOLD" '
 {
@@ -95,38 +107,35 @@ echo "Suspicious public IPs detected: $TOTAL_FOUND"
 # Ensure Git repo exists
 # -------------------------------
 if [ ! -d "$GIT_REPO" ]; then
-    git clone "https://$GITHUB_TOKEN@github.com/skillmio/CoSec.git" "$GIT_REPO"
+    $GIT clone "https://$GITHUB_TOKEN@github.com/skillmio/CoSec.git" "$GIT_REPO"
 fi
 
 mkdir -p "$DDOS_DIR"
 cd "$GIT_REPO"
-git config user.name "Skillmio"
-git config user.email "skillmiocfs@gmail.com"
-git pull --rebase origin "$BRANCH"
+$GIT config user.name "Skillmio"
+$GIT config user.email "skillmiocfs@gmail.com"
+$GIT pull --rebase origin "$BRANCH"
 touch "$DDOS_FILE"
 
 # -------------------------------
-# Filter only new IPs (not already in today's log)
+# Filter only new IPs
 # -------------------------------
 grep -vxFf "$DDOS_FILE" "$TMP_IPS" > "$TMP_NEW" || true
 NEW_COUNT=$(wc -l < "$TMP_NEW")
 echo "New attacking IPs: $NEW_COUNT"
 
 # -------------------------------
-# Ban new IPs via fail2ban (sshd jail)
+# Ban new IPs via fail2ban
 # -------------------------------
 BAN_COUNT=0
 while read -r ip; do
     [ -z "$ip" ] && continue
-
-    # Skip if already banned in the jail
-    if fail2ban-client status "$JAIL" 2>/dev/null | grep -q "$ip"; then
+    if $FAIL2BAN status "$JAIL" 2>/dev/null | grep -q "$ip"; then
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] Already banned: $ip"
         continue
     fi
-
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] Banning IP: $ip"
-    fail2ban-client set "$JAIL" banip "$ip" || true
+    $FAIL2BAN set "$JAIL" banip "$ip" || true
     BAN_COUNT=$((BAN_COUNT+1))
 done < "$TMP_NEW"
 
@@ -135,14 +144,14 @@ done < "$TMP_NEW"
 # -------------------------------
 if [ "$NEW_COUNT" -gt 0 ]; then
     cat "$TMP_NEW" >> "$DDOS_FILE"
-    git add "$DDOS_FILE"
-    git commit -m "DNS abuse batch $(date '+%Y-%m-%d %H:%M:%S')" || true
+    $GIT add "$DDOS_FILE"
+    $GIT commit -m "DNS abuse batch $(date '+%Y-%m-%d %H:%M:%S')" || true
     for i in 1 2 3; do
-        if git push origin "$BRANCH"; then
+        if $GIT push origin "$BRANCH"; then
             echo "✅ GitHub updated with $NEW_COUNT new IPs"
             break
         fi
-        git pull --rebase origin "$BRANCH"
+        $GIT pull --rebase origin "$BRANCH"
     done
 else
     echo "No new IPs to ban"
